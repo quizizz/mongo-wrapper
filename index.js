@@ -25,7 +25,8 @@ class Mongo {
         use: false,
       }, config.replica),
       options: Object.assign({
-        keepAlive: 1000,
+        keepAlive: true,
+        useUnifiedTopology: true,
         autoReconnect: true,
         poolSize: 5,
         connectTimeoutMS: 30000,
