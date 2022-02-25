@@ -1,9 +1,9 @@
-import { MongoClient } from "mongodb";
+import { Db } from "mongodb";
 import { EventEmitter } from 'events';
 import { connectionConfig } from "./connection";
 
 export class MongoWrapper {
-  client: MongoClient;
+  client: Db;
   constructor(name: string, emitter: EventEmitter, config: connectionConfig);
   init(): Promise<MongoWrapper>
 }
