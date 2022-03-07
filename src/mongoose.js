@@ -28,6 +28,7 @@ class MongooseWrapper extends Service {
     const { url, options, print } = generateUrl(config);
 
     this.log(`Connecting in ${print.mode} mode`, print);
+    options.dbName = config.db;
     await MongooseClient.connect(url, options);
     this.log(`Connected in ${print.mode} mode`);
   }
