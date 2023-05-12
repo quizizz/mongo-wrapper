@@ -45,6 +45,10 @@ class MongoWrapper extends Service {
       return this;
     });
   }
+
+  getCollection(name) {
+    return this.client.collection(name);
+  }
 }
 
 exports.MongoWrapper = MongoWrapper;
