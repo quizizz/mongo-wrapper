@@ -8,3 +8,5 @@ export class MongoWrapper {
   init(): Promise<MongoWrapper>
   getCollection<T>(name: string): Collection<T>;
 }
+
+export type Collection = Collection;
