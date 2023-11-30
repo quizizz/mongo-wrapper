@@ -3,12 +3,9 @@ import {
   Db,
   MongoClient,
   MongoClientOptions,
-  Logger as MongoLogger,
+  MongoError,
   ObjectId,
   ReadPreference,
-  MongoServerSelectionError,
-  MongoNetworkError,
-  MongoTimeoutError,
 } from "mongodb";
 
 export interface Server {
@@ -59,13 +56,10 @@ export class MongoConnect implements Mongo {
     this.emitter = emitter;
     this.userConfig = userConfig;
     this.config = {
-      keepAlive: true,
-      poolSize: 5,
+      maxPoolSize: 5,
       connectTimeoutMS: 30000,
       socketTimeoutMS: 30000,
       serverSelectionTimeoutMS: 10000,
-      useUnifiedTopology: true,
-      connectWithNoPrimary: false,
       readPreference: ReadPreference.SECONDARY_PREFERRED,
     };
     this.config.authSource = (userConfig.auth || {}).authSource;
@@ -124,15 +118,11 @@ export class MongoConnect implements Mongo {
   }
 
   static isValidError(err: Error) {
-    return (
-      err instanceof MongoServerSelectionError ||
-      err instanceof MongoNetworkError ||
-      err instanceof MongoTimeoutError
-    );
+    return err instanceof MongoError;
   }
 
   getClient(): MongoClient {
-      return this.mongoClient;
+    return this.mongoClient;
   }
 
   async connect(): Promise<Mongo> {
@@ -164,10 +154,6 @@ export class MongoConnect implements Mongo {
     }
     this.client = this.mongoClient.db(this.userConfig.db);
     this.success(`Successfully connected in ${this.mode} mode`);
-    MongoLogger.setLevel("info");
-    MongoLogger.setCurrentLogger((msg, context) => {
-      this.log(msg, context);
-    });
     if (oldMongoClient instanceof MongoClient) {
       // Do NOT wait. If you wait, this might block indefinitely due to the older server being out of action.
       oldMongoClient.close();
@@ -179,14 +165,13 @@ export class MongoConnect implements Mongo {
 export async function handleMongoError(err: Error, mongo: Mongo) {
   if (MongoConnect.isValidError(err)) {
     if (mongo.reconnecting === null) {
-      mongo.reconnecting = mongo.connect()
-        .then(() => {
-          return null;
-        });
+      mongo.reconnecting = mongo.connect().then(() => {
+        return null;
+      });
     }
     await (mongo.reconnecting || Promise.resolve());
     mongo.reconnecting = null;
-    return null
+    return null;
   }
   return err;
 }
@@ -225,7 +210,7 @@ export function MongoFactory(
   mode: MODES,
   name: string,
   emitter: events.EventEmitter,
-  config: ServerConfig | ReplicaConfig | ShardConfig,
+  config: ServerConfig | ReplicaConfig | ShardConfig
 ): Mongo {
   switch (mode) {
     case MODES.SERVER:
@@ -243,7 +228,7 @@ class ServerMongo extends MongoConnect {
   constructor(
     name: string,
     emitter: events.EventEmitter,
-    config: ServerConfig,
+    config: ServerConfig
   ) {
     const { db, host, port, auth } = config;
     const userConfig: UserConfig = {
@@ -288,8 +273,11 @@ class ShardMongo extends MongoConnect {
   }
 }
 
-
-export function MongoFactoryAuto(name: string, emitter: events.EventEmitter, config: MongoConfig) {
+export function MongoFactoryAuto(
+  name: string,
+  emitter: events.EventEmitter,
+  config: MongoConfig
+) {
   if ((config as ReplicaConfig).replica) {
     return MongoFactory(MODES.REPLSET, name, emitter, config);
   } else if ((config as ShardConfig).shard) {
@@ -319,4 +307,3 @@ export function castToObjectId(value: string) {
 export type MongoConfig = ServerConfig | ReplicaConfig | ShardConfig;
 
 export { ObjectId, MongoClient, Db };
-
