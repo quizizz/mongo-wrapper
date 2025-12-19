@@ -65,7 +65,7 @@ class MongoConnect implements Mongo {
       serverSelectionTimeoutMS: 10000,
       useUnifiedTopology: true,
       connectWithNoPrimary: false,
-      readPreference: ReadPreference.SECONDARY,
+      readPreference: ReadPreference.SECONDARY_PREFERRED,
     };
     this.config.authSource = (userConfig.auth || {}).authSource;
     this.mode = mode;
